@@ -1,0 +1,34 @@
+<h1 class="headline">
+    Login
+</h1>
+
+<!-- Short description of what the page does which is shown to the user. -->
+<p class="margin20">
+    Please log in with your credentials. <br> 
+    You will be redirected to the grading page. <br>
+    As admin you can also access the admin panel.
+</p>
+
+<!-- Form that handles the login. -->
+<div class="formArea">
+    <form [formGroup]="loginInput">
+        <div class="formElement">
+            <label for="username">
+                Username:
+            </label>
+            <input type="text" id="username" formControlName="username">
+        </div>
+        <div class="formElement">
+            <label for="password">
+                Password:
+            </label>
+            <input type="password" id="password" formControlName="password">
+            <p style="margin-top: 5px;">
+                <input type="checkbox" (click)="changeVisibilityOfPassword()">
+                <small>Show/Hide Password </small>
+            </p>
+        </div>
+        <br>
+        <button type="submit" id="submitButton" (click)="Login()">Login</button>
+    </form>
+</div>

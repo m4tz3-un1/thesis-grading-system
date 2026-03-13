@@ -1,0 +1,35 @@
+<header>
+    <img src="assets/Logo.png" alt="Logo" aria-hidden="true">
+    <span>
+        ThesisGradingSystem
+    </span>
+</header>
+
+<nav class="navbar" *ngIf="isLoggedIn">
+    <button class="navButton margin20" (click)="navigateToHome()">
+        <i class="fa fa-home" aria-hidden="true"></i>
+        Home
+    </button>
+    <button class="navButton" (click)="gradeNewThesis()">Grade new thesis</button>
+    <button *ngIf="authService.isUserAdmin()" class="navButton" (click)="navigateToAdmin()">Admin panel</button>
+    <span class="floatingRight">
+        <div class="dropdown">
+            <button class="dropbtn">
+                <i class="fa fa-user" aria-hidden="true"></i>
+                {{authService.getUsername()}} &#9662;</button>
+            <div class="dropdown-content">
+                <a (click)="editUserData()">
+                    Account
+                </a>
+                <a (click)="logout()">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </span>
+</nav>
+
+<div>
+    <router-outlet></router-outlet>
+</div>
+ 

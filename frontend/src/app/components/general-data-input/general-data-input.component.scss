@@ -1,0 +1,112 @@
+.sectionLabel {
+  margin-bottom: 5px;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.formArea {
+  margin-left: 20px;
+  width: 580px;
+}
+
+.formSection {
+  padding: 10px;
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: lighten(#6699cc, 33%);
+}
+
+.formRow {
+  width: 550px;
+  display: flex;
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+.formElement {
+  width: auto;
+  display: inline-block;
+}
+
+.formElement > label {
+  display: block;
+  font-size: 0.8rem;
+  padding-bottom: 3px;
+}
+
+.formElement > span {
+  font-size: 0.8rem;
+  padding-bottom: 3px;
+}
+
+.formElement > input {
+  height: 22px;
+}
+
+.formElement > select {
+  height: 28px;
+}
+
+#studentFirstName, #studentLastName {
+  width: 172px;
+}
+
+#matriculationNumber {
+  width: 150px;
+}
+
+#thesisDegree {
+  width: 130px;
+}
+
+#thesisType {
+  width: 408px;
+}
+
+#thesisTitle {
+  width: 550px;
+  height: 60px;
+}
+
+.submit-button {  
+  background-color: #6699cc;
+  padding: 5px;
+  border-radius: 5px;
+  color: black;
+  margin-top: 1rem;
+  height: 2rem;
+  width: 10rem;
+  font-size: 14px;
+}
+
+.submit-button:disabled {
+  background-color: gray;
+  border: none;
+  color: white;
+  margin-top: 1rem;
+  height: 2rem;
+  width: 10rem;
+  font-size: 14px;
+}
+
+.error {
+  height: auto;
+  margin: 0px;
+}
+
+.error-message {
+  color: red;
+  border: 1px solid red;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  padding: 3px;
+}
+
+.floatingLeft {
+  float: left;
+}
+
+.floatingRight {
+  float: right;
+}

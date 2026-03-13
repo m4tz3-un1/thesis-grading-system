@@ -1,0 +1,1628 @@
+const express = require('express')
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const fs = require('fs')
+const mongoose = require('mongoose')
+const path = require('path')
+const latex = require('node-latex')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const swaggerUI = require('swagger-ui-express')
+const swaggerJsDoc = require('swagger-jsdoc')
+
+require('dotenv').config();
+
+// Define the port the server is running on
+const PORT = process.env.PORT || 8000;
+
+// Set the options for the documentation of the routes with swagger.
+const swaggerOptions = {
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "ThesisGradingSystem API",
+            version: "1.0.0",
+            description: "An API for all the interactions with the TGS frontend"
+        },
+        servers: [
+            {
+                url: "http://localhost:" + PORT
+            }
+        ]
+    },
+    apis: ["./server.js"]
+};
+const swaggerSpecs = swaggerJsDoc(swaggerOptions);
+
+// Creating the express app for the backend and set some needed options defined above.
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpecs, { explorer: true }));
+
+// Connect with database
+mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
+    .then(() => {
+        console.log('Connected to Mongo DB.');
+    }).catch((err) => {
+        console.error(err);
+    });
+const database = mongoose.connection;
+
+// Secret for generating and verifing the jwt tokens 
+// Generated with following code: node -e console.log(require('crypto').randomBytes(256).toString('base64'))
+const JWT_SECRET = process.env.JWT_SECRET;
+
+
+
+// ===== FUNCTIONS =====
+
+/**
+ * This function hashes the given plaintext password of a user.
+ * 
+ * @param {string} password The plaintext password of the user.
+ * 
+ * @returns {string} The hashed password.
+ */
+function hashPassword(password) {
+    return bcrypt.hashSync(password, 10);
+}
+
+/**
+ * This function generates JWT tokens for authorization and refreshing based on the given type parameter.
+ * 
+ * @param {string} username The username of the user.
+ * @param {string} type The type of the token (auth or refresh).
+ * 
+ * @returns {string} The generated token.
+ */
+function generateToken(username, type) {
+    switch (type) {
+        case 'auth':
+            return jwt.sign({ username: username }, JWT_SECRET, { expiresIn: "1d" });
+        case 'refresh':
+            return jwt.sign({ username: username }, JWT_SECRET);
+    }
+}
+
+/**
+ * Function that verifies the received JWT token and either rejects it and stops the further processing or calls the next function.
+ * 
+ * @param {Request} req The received request from the frontend.
+ * @param {Response} res The response which will send back to frontend.
+ * @param {*} next Possibility to call the next function.
+ * 
+ * @returns Either calls next function or returns statuscode 401 - Unauthorized or 403 - Forbidden.
+ */
+function verifyToken(req, res, next) {
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    // if user is not logged in
+    if (token === null || token === undefined) {
+        return res.sendStatus(401);
+    }
+
+    jwt.verify(token, JWT_SECRET, (err) => {
+        // if token is invalid e.g. if it is expired 
+        if (err) {
+            console.log(err);
+            return res.sendStatus(403);
+        }
+
+        // if the token is valid
+        next();
+    })
+}
+
+/**
+ * This function takes an input and an output path and creates from the LaTeX template 
+ * saved at the input path a PDF file and saves it to the given output path.
+ * 
+ * @param {string} inputPath The path of the LaTeX file from which the PDF is generated.
+ * @param {string} outputPath The path where the generated PDF is saved to.
+ * @param {Response} res The response which later is send to the frontend.
+ * 
+ * @returns {void} Nothing.
+ */
+function createPDFFile(inputPath, outputPath, res) {
+
+    const inputFileString = fs.readFileSync(inputPath).toString();
+    const output = fs.createWriteStream(outputPath);
+    const options = {
+        inputs: path.join(__dirname, 'files/templatefiles/pictures'),
+        passes: 2
+    };
+    // inputFileString needs to be of type string to enable 2 passes
+    const pdf = latex(inputFileString, options);
+
+    pdf.pipe(output);
+    pdf.on('error', err => {
+        console.error(err);
+    })
+    pdf.on('finish', () => {
+        res.status(201).send();
+    })
+}
+
+/**
+ * This function receives the points awarded for the thesis and returns the grade for the number of points.
+ * 
+ * @param {number} points The points that have been given for the thesis.
+ * 
+ * @returns {string} The grade for the given number of points.
+ */
+function calculateGrade(points) {
+
+    if (points > 95.5) {
+        return '1,0 (sehr gut/very good)';
+    }
+    else if (points > 91.5) {
+        return '1,3 (sehr gut minus)';
+    }
+    else if (points > 86.5) {
+        return '1,7 (gut plus)';
+    }
+    else if (points > 82.5) {
+        return '2,0 (gut)';
+    }
+    else if (points > 78.5) {
+        return '2,3 (gut minus)';
+    }
+    else if (points > 73.5) {
+        return '2,7 (befriedigend plus)';
+    }
+    else if (points > 69.5) {
+        return '3,0 (befriedigend)';
+    }
+    else if (points > 63.5) {
+        return '3,3 (befriedigend minus)';
+    }
+    else if (points > 58.5) {
+        return '3,7 (ausreichend plus)';
+    }
+    else if (points > 49.5) {
+        return '4,0 (ausreichend)';
+    }
+    else {
+        return '5,0 (nicht ausreichend)';
+    }
+}
+
+/**
+ * Fits a string into a format that LaTeX can work with it. Works for the following symbols: & % _ { } $ #
+ * 
+ * @param {String} originalString The string that should be prepared to fit into a LaTeX file.
+ * 
+ * @returns {String} The for LaTeX prepped string.
+ */
+function texifyString(originalString) {
+    return originalString.replaceAll('{', '\\{')
+        .replaceAll('}', '\\}')
+        .replaceAll('$', '\\$')
+        .replaceAll('&', '\\&')
+        .replaceAll('#', '\\#')
+        .replaceAll('_', '\\_')
+        .replaceAll('%', '\\%');
+}
+
+/**
+ * Function that generates the LaTeX file for the grading that is received from the frontend. 
+ * 
+ * @param {Request} req The request received from the frontend which contains the data of the grading form.
+ * 
+ * @returns {void} Nothing.
+ */
+function generateLatexFile(req, res) {
+
+    // The latex String contains the template with all the placeholders that will later be filled with the received data.
+    let latexString = fs.readFileSync('./files/templatefiles/latextemplate.tex', "utf-8");
+    let oberseminarText = '';
+    let sumOfPoints = 0;
+    let listOfRubrics = [];
+    let rubricTableTemplate = '';
+    let rubricCounter = 1;
+
+    // Fill placeholders of the latex template with given data
+    if (req.body.oberseminarDate) {
+        oberseminarText = 'The student successfully defended the thesis in the Oberseminar on \\textbf{OBERSEMINARDATE} at \\textbf{OBERSEMINARTIME}.';
+        oberseminarText = oberseminarText.replace('OBERSEMINARDATE',
+            (req.body['oberseminarDate'].slice(8, 10) + '.' + req.body['oberseminarDate'].slice(5, 7) + '.' + req.body['oberseminarDate'].slice(0, 4))
+        );
+        oberseminarText = oberseminarText.replace('OBERSEMINARTIME', req.body['oberseminarTime']);
+    }
+    req.body['thesisTitle'] ? latexString = latexString.replace('THESISTITLE', texifyString(req.body['thesisTitle'])) : null;
+    req.body['studentLastName'] ? latexString = latexString.replaceAll('STUDENTLASTNAME', req.body['studentLastName']) : null;
+    req.body['studentFirstName'] ? latexString = latexString.replaceAll('STUDENTFIRSTNAME', req.body['studentFirstName']) : null;
+    req.body['matriculationNumber'] ? latexString = latexString.replace('MATRIKELNUMBER', req.body['matriculationNumber']) : null;
+    req.body['thesisDegree'] ? latexString = latexString.replace('BA/MA', req.body['thesisDegree']) : null;
+    req.body['Conclusion'] ? latexString = latexString.replace('CONCLUSION', texifyString(req.body['Conclusion'])) : null;
+
+    database.collection("gradingtemplates").findOne({ title: req.body.thesisType }).then((template) => {
+        database.collection("users").findOne({ username: req.body.username }).then((user) => {
+            // Points and editarea are saved into an array for creating the rubric table in the next step
+            for (let item in req.body) {
+                if (item.toLowerCase().endsWith('category')) {
+                    let category = new Array();
+                    let categoryPoints = '';
+                    let categoryName = '\\textbf{' + texifyString(item.replace(' category', '')) + '}';
+                    for (let i = 0; i < template.fields.length; i++) {
+                        if (template.fields[i].id === item) {
+                            categoryPoints = (template.fields[i].max.toString());
+                        }
+                    }
+                    category.push(categoryName, '', '', 'max. ' + categoryPoints + ' Points');
+                    listOfRubrics.push(category);
+                }
+                else if (item.toLowerCase().endsWith('points')) {
+                    sumOfPoints += Number(req.body[item]);
+                    var rubric = new Array();
+                    let rubricName = texifyString(item.replace(' points', ''));
+                    rubric.push(rubricName);
+                    for (let i = 0; i < template.fields.length; i++) {
+                        if (template.fields[i].id === item) {
+                            rubric.push(template.fields[i].max.toString());
+                        }
+                    }
+                    rubric.push(req.body[item]);
+                }
+                else if (item.toLowerCase().endsWith('editarea')) {
+                    rubric.push(texifyString(req.body[item]));
+                    listOfRubrics.push(rubric);
+                }
+            }
+
+            // Generate the table with the rubrics saved above
+            for (let i = 0; i < listOfRubrics.length; i++) {
+                let rubricText = "\\cellcolor{lightgray}RUBRICNAME & TEXT & MAX & \\cellcolor{PaleGreen1} POINTS \\\\";
+                if (listOfRubrics[i][0].startsWith('\\textbf')) {
+                    rubricText = rubricText.replace('RUBRICNAME', listOfRubrics[i][0]);
+                }
+                else {
+                    rubricText = rubricText.replace('RUBRICNAME', rubricCounter.toString() + '. ' + listOfRubrics[i][0]);
+                    rubricCounter++;
+                }
+                rubricText = rubricText.replace('TEXT', listOfRubrics[i][3]);
+                rubricText = rubricText.replace('MAX', listOfRubrics[i][1]);
+                rubricText = rubricText.replace('POINTS', listOfRubrics[i][2]);
+                rubricTableTemplate += rubricText + '\n \\hline \n';
+            }
+            rubricTableTemplate += '\\cellcolor{lightgray}\\textbf{Grade} & \\textbf{GRADE} & 100 & \\cellcolor{PaleGreen1} \\textbf{TOTALPOINTS} \\\\ \n \\hline';
+
+            // Replace the placeholders in the latexString with the data created above
+            latexString = latexString.replaceAll('EXAMINERTITLE', texifyString(user.academicTitle));
+            latexString = latexString.replaceAll('EXAMINERFIRSTNAME', user.firstName);
+            latexString = latexString.replaceAll('EXAMINERLASTNAME', user.lastName);
+            latexString = latexString.replace('PHONE', user.phone);
+            latexString = latexString.replace('MAILADRESS', texifyString(user.email));
+            latexString = latexString.replaceAll('WEBSITE', texifyString(user.website));
+            latexString = latexString.replace('TABLE', rubricTableTemplate);
+            latexString = latexString.replace('OBERSEMINAR', oberseminarText);
+            latexString = latexString.replaceAll('TOTALPOINTS', sumOfPoints);
+            latexString = latexString.replaceAll('GRADE', calculateGrade(sumOfPoints));
+
+            // Save the latex file from the generated latexString above
+            fs.writeFileSync('./files/outputfiles/grading' + req.body.username + '.tex', latexString, function (err) {
+                if (err) {
+                    throw err;
+                }
+            })
+            createPDFFile('./files/outputfiles/grading' + req.body.username + '.tex', './files/outputfiles/grading' + req.body.username + '.pdf', res);
+        })
+    })
+}
+
+
+
+// ===== ROUTES ===== 
+
+/**
+ * @openapi
+ * '/':
+ *  get:   
+ *     summary: Base route of the server which shows that the server is running.
+ *     tags:
+ *      - general
+ *     responses:
+ *      200:
+ *        description: Server is running and welcome message is shown
+ *      500:
+ *        description: Some server error
+ */
+app.get("/", (req, res) => {
+    res.status(200).send('<h1> Welcome </h1> Server running on port: ' + PORT);
+});
+
+/**
+ * @openapi
+ * '/api/grading/getGradingTemplate/{thesisType}':
+ *  get:   
+ *     summary: Get the grading template by thesis type.
+ *     tags:
+ *      - grading
+ *     parameters:
+ *      - name: thesisType
+ *        in: path
+ *        description: The thesis type
+ *        required: true
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *            examples:
+ *              minimal example:
+ *                value:
+ *                  {
+ *                    "title": "Design-driven Thesis",
+ *                    "task": "grading",
+ *                    "fields": [
+ *                      {
+ *                        "id": "Conclusion",
+ *                        "type": "textarea",
+ *                        "label": "Conclusion:",
+ *                        "placeholder": "Conclusion",
+ *                        "required": true
+ *                      },
+ *                      {
+ *                        "id": "Project management",
+ *                        "type": "select",
+ *                        "required": true,
+ *                        "label": "Project management [max points: 5]:",
+ *                        "placeholder": "Select text for project management",
+ *                        "options": [
+ *                          {
+ *                            "label": "The student took the lead on the project, delivered everything on time, continuously identified important 
+ *                                action points, organized meetings with the supervisors and came prepared to them. [5]",
+ *                            "value": "The student took the lead on the project, delivered everything on time, continuously identified important 
+ *                                action points, organized meetings with the supervisors and came prepared to them.",
+ *                            "points": "5"
+ *                          },
+ *                          {
+ *                            "label": "The student mostly came prepared to meetings with the supervisor, and showed project and time management skills. 
+ *                                [3 - 4.5]",
+ *                            "value": "The student mostly came prepared to meetings with the supervisor, and showed project and time management skills.",
+ *                            "points": "3 - 4.5"
+ *                          },
+ *                          {
+ *                            "label": "The student in most cases arrived at the meetings with supervisors without preparation. Only a few times did 
+ *                                the student show proactive behavior. [1.5 - 2.5]",
+ *                            "value": "The student in most cases arrived at the meetings with supervisors without preparation. Only a few times did 
+ *                                the student show proactive behavior.",
+ *                            "points": "1.5 - 2.5"
+ *                          },
+ *                          {
+ *                            "label": "The student participated irregularly or never in meetings with the supervisor, arriving at the meetings 
+ *                                without preparation expecting the supervisor to tell exactly what to do. The student rushed all the work to the end, 
+ *                                identifying bad time management. [0 - 1]",
+ *                            "value": "The student participated irregularly or never in meetings with the supervisor, arriving at the meetings 
+ *                                without preparation expecting the supervisor to tell exactly what to do. The student rushed all the work to the end, 
+ *                                identifying bad time management.",
+ *                            "points": "0 - 1"
+ *                          }
+ *                        ]
+ *                      },
+ *                      {
+ *                        "id": "Project management points",
+ *                        "type": "points",
+ *                        "label": "Points for project management:",
+ *                        "required": true,
+ *                        "max": 5,
+ *                        "pattern": "[0-9]+([.][5])?"
+ *                      },
+ *                      {
+ *                        "id": "Project management editarea",
+ *                        "type": "editarea",
+ *                        "label": "Project management text (edit if needed):",
+ *                        "required": true
+ *                      }
+ *                    ]
+ *                  }
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/grading/getGradingTemplate/:thesisType').get(verifyToken, (req, res) => {
+    const requestedTemplate = req.params['thesisType']
+
+    database.collection("gradingtemplates").findOne({ title: requestedTemplate })
+        .then((template) => {
+            res.status(200).send(template);
+        })
+})
+
+/**
+ * @openapi
+ * '/api/grading/createPDF':
+ *  post:   
+ *     summary: Create PDF from the received grading input.
+ *     tags:
+ *      - grading
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *          examples:
+ *            example with 2 graded rubrics: 
+ *              value:
+ *                {
+ *                  "Conclusion": "The conclusion of the thesis grading.",
+ *                  "Project management": "The student took the lead on the project, delivered everything on time, 
+ *                      continuously identified important action points, organized meetings with the supervisors and came prepared to them.",
+ *                  "Project management points": "5",
+ *                  "Project management editarea": "The student took the lead on the project, delivered everything on time, 
+ *                      continuously identified important action points, organized meetings with the supervisors and came prepared to them.",
+ *                  "thesisType": "2",
+ *                  "thesisDegree": "master's thesis",
+ *                  "oberseminarDate": "",
+ *                  "oberseminarTime": "",
+ *                  "studentFirstName": "Firstname",
+ *                  "studentLastName": "Lastname",
+ *                  "matriculationNumber": 1234567,
+ *                  "thesisTitle": "Title for the thesis",
+ *                  "username": "user"
+ *                }
+ *     responses:
+ *      201:
+ *        description: Created Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/grading/createPDF').post(verifyToken, (req, res) => {
+    generateLatexFile(req, res);
+})
+
+/**
+ * @openapi
+ * '/api/grading/getPDF/{username}':
+ *  get:   
+ *     summary: Get the generated PDF report.
+ *     tags:
+ *      - grading
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/pdf:
+ *            schema:
+ *              type: string
+ *              format: binary
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/grading/getPDF/:username').get(verifyToken, (req, res) => {
+    const username = req.params['username'];
+    res.status(200).sendFile(path.join(__dirname, 'files/outputfiles/grading' + username + '.pdf'));
+})
+
+/**
+ * @openapi
+ * '/api/users/login':
+ *  post:   
+ *     summary: Is used for the login of users.
+ *     tags:
+ *      - users
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              username:
+ *                type: string
+ *                description: The username of the user.
+ *              password:
+ *                type: string
+ *                description: The password of the user.
+ *     responses:
+ *      200:
+ *        description: Logged in Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                username:
+ *                  type: string
+ *                  description: The username of the user.
+ *                isAdmin:
+ *                  type: boolean
+ *                  description: True or false depending on if the user has the admin role.
+ *                authToken:
+ *                  type: string
+ *                  description: The generated jwt auth token for the user.
+ *                refreshToken:
+ *                  type: string
+ *                  description: The generated jwt token for refreshing the auth token after it is expired.
+ *      401:
+ *        description: Unauthorized - Authorization gone wrong, e.g. wrong username or password
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/login').post((req, res) => {
+    database.collection("users").findOne({
+        username: req.body.username.toLowerCase(),
+    }, function (err, user) {
+        if (err) {
+            console.log(err);
+        }
+        if (!user) {
+            console.log('User not found');
+            return res.status(401).send();
+        }
+        if (bcrypt.compareSync(req.body.password, user.password)) {
+            let authToken = generateToken(req.body.username, 'auth');
+            res.status(200).send({ "username": user.username, "isAdmin": user.isAdmin, "authToken": authToken, "refreshToken": user.refreshToken });
+        }
+        return res.status(401).send();
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/delelteFilesWhenLogout/{username}':
+ *  delete:   
+ *     summary: Delete the saved files of the user when logging out.
+ *     tags:
+ *      - users
+ *     parameters:
+ *      - name: username
+ *        in: path
+ *        description: The username of the user that should be deleted.
+ *        required: true
+ *     responses:
+ *      204:
+ *        description: Files deleted Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/delelteFilesWhenLogout/:username').delete((req, res) => {
+    const username = req.params['username'];
+
+    if (fs.existsSync('./files/outputfiles/grading' + username + '.tex')) {
+        fs.unlinkSync('./files/outputfiles/grading' + username + '.tex');
+        fs.unlinkSync('./files/outputfiles/grading' + username + '.pdf');
+    }
+
+    res.status(204).send();
+})
+
+/**
+ * @openapi
+ * '/api/users/register':
+ *  post:   
+ *     summary: Is used for the registration of new users.
+ *     tags:
+ *      - users
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              academicTitle:
+ *                type: string
+ *                description: The academic title of the new user.
+ *              firstName:
+ *                type: string
+ *                description: The first name of the new user.
+ *              lastName:
+ *                type: string
+ *                description: The last name of the new user.
+ *              email:
+ *                type: string
+ *                description: The email of the new user.
+ *              phone:
+ *                type: string
+ *                description: The phone number of the new user.
+ *              website:
+ *                type: string
+ *                description: The website of the new user (optional).
+ *              username:
+ *                type: string
+ *                description: The username of the new user.
+ *              password:
+ *                type: string
+ *                description: The password of the new user.
+ *              isAdmin:
+ *                type: boolean
+ *                description: If the new user schould have the role admin.
+ *     responses:
+ *      201:
+ *        description: Created Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      409:
+ *        description: Conflict - if username already exists
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                message:
+ *                  type: string
+ *                  description: The error message, e.g. that the username is already taken.
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/register').post(verifyToken, (req, res) => {
+    let user = req.body;
+
+    database.collection("users").findOne({ username: req.body.username.toLowerCase() }, (err, userFound) => {
+        if (err) {
+            console.log(err);
+        }
+        if (userFound) {
+            res.status(409).send({ "message": 'This username alredy exists. Please try again.' });
+        }
+        else {
+            user.username = user.username.toLowerCase();
+            user.isAdmin = JSON.parse(user.isAdmin);
+            user.password = hashPassword(user.password);
+            user.refreshToken = generateToken(user.username, 'refresh');
+            user.tokenBlacklist = [];
+            database.collection("users").insertOne(user, (err) => {
+                if (err) {
+                    console.log(err);
+                }
+                return res.status(201).send();
+            });
+        }
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/refreshToken':
+ *  post:   
+ *     summary: Is used to create a new auth token based on a refresh token and it's validity.
+ *     tags:
+ *      - users
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              refreshToken:
+ *                type: string
+ *                description: The refresh token. If this token is valid the new auth token will be created.
+ *     responses:
+ *      200:
+ *        description: Created Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *            examples:
+ *              minimal example:
+ *                value:
+ *                  {
+ *                    authToken: "authToken"
+ *                  }
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - refresh token not valid
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/refreshToken').post((req, res) => {
+    database.collection("users").findOne({ username: req.body.username }, (err, user) => {
+        if (err) {
+            console.log(err);
+        }
+        if (user.tokenBlacklist.includes(req.body.refreshToken)) {
+            res.status(403).send();
+        }
+        else {
+            jwt.verify(req.body.refreshToken, JWT_SECRET, (err) => {
+                if (err) {
+                    throw err;
+                }
+
+                let authToken = generateToken(req.body.username, 'auth');
+                res.status(200).send({ "authToken": authToken });
+            })
+        }
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/getListOfUsers':
+ *  get:   
+ *     summary: Get the list of all users to change their role or delete them. 
+ *     tags:
+ *      - users
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *            examples:
+ *              minimal example:
+ *                value:
+ *                  {
+ *                    title: "Change data of users",
+ *                    task: "changeUserList",
+ *                    fields: [
+ *                      {
+ *                        id: "Username1fullname",
+ *                        type: "username",
+ *                        value: "Username1"
+ *                      },
+ *                      { 
+ *                        id: 'Username1IsAdmin', 
+ *                        type: 'admin', 
+ *                        isAdmin: false 
+ *                      },
+ *                      { 
+ *                        id: 'Username2fullname', 
+ *                        type: 'username', 
+ *                        value: 'Username2' 
+ *                      },
+ *                      { 
+ *                        id: 'Username2IsAdmin', 
+ *                        type: 'admin', 
+ *                        isAdmin: true 
+ *                      }
+ *                    ]
+ *                  }
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/getListOfUsers').get(verifyToken, (req, res) => {
+    database.collection("users").find().toArray()
+        .then((userlist) => {
+            let sendData = '{"title": "Change data of users", '
+                + '"task": "changeUserList", '
+                + '"fields": [';
+            userlist.forEach((user) => {
+                sendData += '{"id": ' + JSON.stringify(user.username + 'fullname') + ','
+                    + '"type": "username" ,'
+                    + '"value": ' + JSON.stringify(user.username) + '},'
+                    + '{"id": ' + JSON.stringify(user.username + 'IsAdmin') + ', '
+                    + '"type": "admin", '
+                    + '"isAdmin": ' + user.isAdmin + '},'
+                    + '{"id": "line",'
+                    + '"type": "line"},';
+            })
+            // Delete the last comma of the sendData string
+            sendData = sendData.slice(0, sendData.length - 1);
+            sendData += ']}';
+            res.status(200).send(sendData);
+        })
+        .catch((err) => console.log(err))
+})
+
+/**
+ * @openapi
+ * '/api/users/getEditForUser/{username}':
+ *  get:   
+ *     summary: Get the data, except the role, for a specific user.
+ *     tags:
+ *      - users
+ *     parameters:
+ *      - name: username
+ *        in: path
+ *        description: The username of the user requesting the data.
+ *        required: true
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                task:
+ *                  type: string
+ *                  description: The task which should be executed by the dynamic form - in this case 'editUserData'
+ *                fields:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                  example:
+ *                    - id: "academicTitle"
+ *                      label: "Academic title:"
+ *                      type: "text"
+ *                      value: "Prof. Dr."
+ *                    - id: "firstName"
+ *                      label: "First name:"
+ *                      type: "text"
+ *                      value: "Firstname"
+ *                    - id: "lastName"
+ *                      label: "Last name:"
+ *                      type: "text"
+ *                      value: "Lastname"
+ *                    - id: "phone"
+ *                      label: "Phone:"
+ *                      type: "text"
+ *                      value: "+00 1234 56789"
+ *                    - id: "email"
+ *                      label: "Email:"
+ *                      type: "longtext"
+ *                      value: "name@examplemail.de"
+ *                    - id: "website"
+ *                      label: "Website:"
+ *                      type: "longtext"
+ *                      value: "example.com"
+ *                    - id: "oldPassword"
+ *                      label: "Old password:"
+ *                      type: "password"
+ *                    - id: "newPassword"
+ *                      label: "New password:"
+ *                      type: "password"
+ *                    - id: "confirmNewPassword"
+ *                      label: "Confirm new password:"
+ *                      type: "password"
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/getEditForUser/:username').get(verifyToken, (req, res) => {
+    let username = req.params['username'];
+    let userEditTemplate = '{"task": "editUserData",'
+        + '"fields": [';
+
+    database.collection("users").findOne({ username: username }, (err, user) => {
+        if (err) {
+            console.log(err);
+        }
+        userEditTemplate += '{"id": "academicTitle",'
+            + '"label": "Academic title:",'
+            + '"type": "text",'
+            + '"value": ' + JSON.stringify(user.academicTitle) + '},'
+            + '{"id": "firstName",'
+            + '"label": "First name:",'
+            + '"type": "text",'
+            + '"required": true,'
+            + '"value": ' + JSON.stringify(user.firstName) + '},'
+            + '{"id": "lastName",'
+            + '"label": "Last name:",'
+            + '"type": "text",'
+            + '"required": true,'
+            + '"value": ' + JSON.stringify(user.lastName) + '},'
+            + '{"id": "phone",'
+            + '"label": "Phone:",'
+            + '"type": "text",'
+            + '"required": true,'
+            + '"value": ' + JSON.stringify(user.phone) + '},'
+            + '{"id": "email",'
+            + '"label": "Email:",'
+            + '"type": "longtext",'
+            + '"required": true,'
+            + '"emailValidator": true,'
+            + '"value": ' + JSON.stringify(user.email) + '},'
+            + '{"id": "website",'
+            + '"label": "Website:",'
+            + '"type": "longtext",'
+            + '"value": ' + JSON.stringify(user.website) + '},'
+            + '{"id": "line",'
+            + '"type": "line"},'
+            // password fields - if the password should be changed
+            + '{"id": "oldPassword",'
+            + '"label": "Old password:",'
+            + '"required": false,'
+            + '"type": "password"},'
+            + '{"id": "newPassword",'
+            + '"label": "New password:",'
+            + '"type": "password",'
+            + '"pattern": "(?=.*?[A-ZÄÖÜ])(?=.*?[a-zäöüß])(?=.*?[0-9])(?=.*?[#@\.:,;$+=!?()\\"\'%&/_-])'
+            + '[A-ZÄÖÜa-zäöüß0-9#@\.:,;$+=!?()\\"\'%&/_-]{8,}"},'
+            + '{"id": "confirmNewPassword",'
+            + '"label": "Confirm new password:",'
+            + '"type": "password"},'
+            + '{"id": "line",'
+            + '"type": "line"}]}';
+        res.status(200).send(userEditTemplate);
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/deleteUser/{username}':
+ *  delete:   
+ *     summary: Delete the user with the received username.
+ *     tags:
+ *      - users
+ *     parameters:
+ *      - name: username
+ *        in: path
+ *        description: The username of the user that should be deleted.
+ *        required: true
+ *     responses:
+ *      204:
+ *        description: User deleted Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/deleteUser/:username').delete(verifyToken, (req, res) => {
+    const username = req.params['username'];
+
+    database.collection("users").deleteOne({ username: username }, (err) => {
+        if (err) {
+            console.log(err);
+        }
+        res.status(204).send();
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/changeUserRole/{username}':
+ *  put:   
+ *     summary: Change the role of a specific user.
+ *     tags:
+ *      - users
+ *     parameters:
+ *      - name: username
+ *        in: path
+ *        description: The username of the user which role should be changed.
+ *        required: true
+ *     responses:
+ *      204:
+ *        description: User role changed Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/changeUserRole/:username').put(verifyToken, (req, res) => {
+    const username = req.params['username'];
+
+    database.collection("users").findOne({ username: username }, (err, user) => {
+        if (err) {
+            console.log(err);
+        }
+        let newUserRole = !user.isAdmin;
+        database.collection("users").updateOne({ username: username }, { $set: { isAdmin: newUserRole } }, (err) => {
+            if (err) {
+                console.log(err);
+            }
+            else {
+                res.status(204).send();
+            }
+        })
+    })
+})
+
+/**
+ * @openapi
+ * '/api/users/saveChangedUserData':
+ *  put:   
+ *     summary: Save userdata after made changes for a specific users.
+ *     tags:
+ *      - users
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *          examples:
+ *            one specific user:
+ *              value:
+ *                {
+ *                  academicTitle: 'Prof. Dr.',
+ *                  firstName: 'Firstname',
+ *                  lastName: 'Lastname',
+ *                  email: 'name@examplemail.de',
+ *                  phone: '+00 1234 56789',
+ *                  website: 'example.de',
+ *                  username: 'username',
+ *                  refreshToken: 'refreshToken',
+ *                  oldPassword: '',
+ *                  newPassword: '',
+ *                  confirmNewPassword: ''
+ *                }
+ *     responses:
+ *      204:
+ *        description: User data changed Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/users/saveChangedUserData').put(verifyToken, (req, res) => {
+
+    database.collection("users").findOne({ username: req.body.username }, (err, user) => {
+        if (err) {
+            console.log(err);
+        }
+        let newPassword = user.password;
+        let newTokenBlacklist = user.tokenBlacklist;
+        let newRefreshToken = user.refreshToken;
+        if (req.body.oldPassword !== '') {
+            if (bcrypt.compareSync(req.body.oldPassword, user.password)) {
+                newPassword = hashPassword(req.body.newPassword);
+                newTokenBlacklist.push(req.body.refreshToken);
+                newRefreshToken = generateToken(user.username, 'refresh');
+            }
+            else {
+                res.status(409).send({ "message": 'Old password was incorrect.' });
+            }
+        }
+        database.collection("users").updateOne({ username: req.body.username }, {
+            $set: {
+                academicTitle: req.body.academicTitle,
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                phone: req.body.phone,
+                website: req.body.website,
+                password: newPassword,
+                refreshToken: newRefreshToken,
+                tokenBlacklist: newTokenBlacklist
+            }
+        }, (err) => {
+            if (err) {
+                console.log(err);
+            }
+            res.status(204).send();
+        })
+    })
+})
+
+/**
+ * @openapi
+ * '/api/rubrics/getTemplateCollection':
+ *  get:   
+ *     summary: Get the collection of existing thesis types.
+ *     tags:
+ *      - rubrics
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *            example:
+ *              [
+ *                { id: 'Design-driven Thesis', title: 'Design-driven Thesis' },
+ *                { id: 'Research-driven Thesis', title: 'Research-driven Thesis' },
+ *                { id: 'Design-driven and small evaluation Thesis', title: 'Design-driven and small evaluation Thesis' }
+ *              ]
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/rubrics/getTemplateCollection').get(verifyToken, (req, res) => {
+
+    database.collection("gradingtemplates").find().toArray()
+        .then((templateList) => {
+            let templateCollection = [];
+            templateList.forEach((template) => {
+                templateCollection.push({ "id": template.title, "title": template.title });
+            })
+            res.status(200).send(templateCollection);
+        })
+        .catch((err) => console.log(err))
+})
+
+/**
+ * @openapi
+ * '/api/rubrics/getNewTemplate':
+ *  get:   
+ *    summary: Get the config for a new thesis template.
+ *    tags:
+ *      - rubrics
+ *    responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *            example:
+ *              {
+ *                title: 'New thesis type',
+ *                task: 'editTemplate',
+ *                fields: [
+ *                  {
+ *                    id: 'thesisTitle',
+ *                    type: 'longtext',
+ *                    label: 'Thesis title:',
+ *                    placeholder: 'Set thesis title',
+ *                    required: true
+ *                  },
+ *                  {
+ *                    id: 'NewCategory1 category',
+ *                    type: 'longtext',
+ *                    required: true,
+ *                    label: 'NewCategory1 category:',
+ *                    newRubricCounter: 1,
+ *                    placeholder: 'Set name of the new category'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 name',
+ *                    type: 'longtext',
+ *                    label: 'NewRubric1 name:',
+ *                    required: true,
+ *                    placeholder: 'Set name of the new rubric'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 option1',
+ *                    type: 'textarea',
+ *                    label: 'NewRubric1 option1:',
+ *                    required: true,
+ *                    placeholder: 'Input text for the option of the new rubric'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 option1 points',
+ *                    type: 'text',
+ *                    label: 'NewRubric1 option1 points:',
+ *                    required: true,
+ *                    placeholder: 'Input points for option',
+ *                    pattern: '([0-9]+([.][5])?){1}([ ]*[-]{1}[ ]*[0-9]+([.][5])?)?',
+ *                    deleteOption: true
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 points max',
+ *                    type: 'text',
+ *                    label: 'NewRubric1 points max:',
+ *                    placeholder: 'Set max points for rubric',
+ *                    required: true,
+ *                    pattern: '[0-9]+([.][5])?',
+ *                    newOptionCounter: 2
+ *                  },
+ *                  { 
+ *                    id: 'addCategoryButton', 
+ *                    type: 'addCategory', 
+ *                    newCategoryCounter: 2 
+ *                  }
+ *                ]
+ *              }
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/rubrics/getNewTemplate').get(verifyToken, (req, res) => {
+    configData = '{"title": "New thesis type", '
+        + '"task": "editTemplate", '
+        + '"fields": ['
+        // title of the new thesis type
+        + '{"id": "thesisTypeTitle",'
+        + '"type": "longtext", '
+        + '"label": "Thesis type title:", '
+        + '"placeholder": "Set thesis type title", '
+        + '"required": true},'
+        + '{"id": "line", '
+        + '"type": "line"},'
+        // Category 
+        + '{"id": "NewCategory1 category",'
+        + '"type": "longtext",'
+        + '"label": "NewCategory1 category:",'
+        + '"required": true,'
+        + '"newRubricCounter": 1,'
+        + '"placeholder": "Set name of the new category"},'
+        + '{"id": "line", '
+        + '"type": "line"},'
+        // fields for a rubric (name of the rubric, text and points for the rubric)
+        + '{"id": "NewRubric1 name",'
+        + '"type": "longtext",'
+        + '"label": "NewRubric1 name:",'
+        + '"required": true,'
+        + '"placeholder": "Set name of the new rubric"},'
+        + '{"id": "NewRubric1 option1",'
+        + '"type": "textarea",'
+        + '"label": "NewRubric1 option1:",'
+        + '"required": true,'
+        + '"placeholder": "Input text for the option of the new rubric"},'
+        + '{"id": "NewRubric1 option1 points",'
+        + '"type": "text",'
+        + '"label": "NewRubric1 option1 points:",'
+        + '"required": true,'
+        + '"placeholder": "Input points for option",'
+        + '"pattern": "([0-9]+([.][5])?){1}([ ]*[-]{1}[ ]*[0-9]+([.][5])?)?",'
+        + '"deleteOption": true},'
+        // max points for the rubric
+        + '{"id": "NewRubric1 points max",'
+        + '"type": "text",'
+        + '"label": "NewRubric1 points max:",'
+        + '"placeholder": "Set max points for rubric",'
+        + '"required": true,'
+        + '"pattern": "[0-9]+([.][5])?",'
+        + '"newOptionCounter": 2},'
+        + '{"id": "line", '
+        + '"type": "line"},'
+        // button to add a rubric to the thesis type
+        + '{"id": "addCategoryButton", '
+        + '"type": "addCategory", '
+        + '"newCategoryCounter": 2}]}';
+    res.status(200).send(JSON.parse(configData));
+})
+
+/**
+ * @openapi
+ * '/api/rubrics/getTemplateForEdit/{thesisType}':
+ *  get:   
+ *    summary: Get the template for the given thesis type.
+ *    tags:
+ *      - rubrics
+ *    parameters:
+ *      - name: thesisType
+ *        in: path
+ *        description: The thesis type which should be edited.
+ *        required: true
+ *    responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *            example:
+ *              {
+ *                title: 'New thesis type',
+ *                task: 'editTemplate',
+ *                fields: [
+ *                  {
+ *                    id: 'thesisTitle',
+ *                    type: 'longtext',
+ *                    label: 'Thesis title:',
+ *                    placeholder: 'Set thesis title',
+ *                    required: true
+ *                  },
+ *                  {
+ *                    id: 'NewCategory1 category',
+ *                    type: 'longtext',
+ *                    required: true,
+ *                    label: 'NewCategory1 category:',
+ *                    newRubricCounter: 1,
+ *                    placeholder: 'Set name of the new category'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 name',
+ *                    type: 'longtext',
+ *                    label: 'NewRubric1 name:',
+ *                    required: true,
+ *                    placeholder: 'Set name of the new rubric'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 option1',
+ *                    type: 'textarea',
+ *                    label: 'NewRubric1 option1:',
+ *                    required: true,
+ *                    placeholder: 'Input text for the option of the new rubric'
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 option1 points',
+ *                    type: 'text',
+ *                    label: 'NewRubric1 option1 points:',
+ *                    required: true,
+ *                    placeholder: 'Input points for option',
+ *                    pattern: '([0-9]+([.][5])?){1}([ ]*[-]{1}[ ]*[0-9]+([.][5])?)?',
+ *                    deleteOption: true
+ *                  },
+ *                  {
+ *                    id: 'NewRubric1 points max',
+ *                    type: 'text',
+ *                    label: 'NewRubric1 points max:',
+ *                    placeholder: 'Set max points for rubric',
+ *                    required: true,
+ *                    pattern: '[0-9]+([.][5])?',
+ *                    newOptionCounter: 2
+ *                  },
+ *                  { 
+ *                    id: 'addCategoryButton', 
+ *                    type: 'addCategory', 
+ *                    newCategoryCounter: 2 
+ *                  }
+ *                ]
+ *              }
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/rubrics/getTemplateForEdit/:thesisType').get(verifyToken, (req, res) => {
+    const requestedTemplate = req.params['thesisType'];
+
+    database.collection("gradingtemplates").findOne({ title: requestedTemplate }, (err, template) => {
+        if (err) {
+            console.log(err);
+        }
+        let optionCounter = 0;
+        let configData = '{"title": ' + JSON.stringify(template.title) + ', '
+            + '"task": "editTemplate", '
+            + '"fields": ['
+            + '{"id": "thesisTypeTitle",'
+            + '"type": "longtext", '
+            + '"label": "Thesis type title:", '
+            + '"value": ' + JSON.stringify(template.title) + ', '
+            + '"required": true},';
+        for (let key in template.fields) {
+            if (template.fields[key].id.toLowerCase().endsWith('category')) {
+                configData += '{ "id": "line",'
+                    + '"type": "line"},'
+                    + '{"id": ' + JSON.stringify(template.fields[key].id) + ','
+                    + '"type": "longtext", '
+                    + '"newRubricCounter": 1,'
+                    + '"label": ' + JSON.stringify(template.fields[key].id + ':') + ','
+                    + '"value": ' + JSON.stringify(template.fields[key].id).replace(' category', '') + ', '
+                    + '"required": true},';
+            }
+            if (template.fields[key].id !== 'Conclusion' &&
+                template.fields[key].id !== 'line' &&
+                !template.fields[key].id.toLowerCase().endsWith('category') &&
+                !template.fields[key].id.toLowerCase().includes('points') &&
+                !template.fields[key].id.toLowerCase().includes('editarea')
+            ) {
+                optionCounter = 1;
+                // name of the rubric
+                configData += '{ "id": "line",'
+                    + '"type": "line"},'
+                    + '{"id": ' + JSON.stringify(template.fields[key].id + ' name') + ','
+                    + '"type": "longtext",'
+                    + '"label": ' + JSON.stringify(template.fields[key].id + ' name:') + ','
+                    + '"required": true,'
+                    + '"value": ' + JSON.stringify(template.fields[key].id) + '},';
+                // texts and points for the rubric
+                for (let option of template.fields[key].options) {
+                    configData += '{"id": ' + JSON.stringify(template.fields[key].id + ' option' + optionCounter) + ','
+                        + '"type": "textarea",'
+                        + '"label": ' + JSON.stringify(template.fields[key].id + ' option' + optionCounter + ':') + ','
+                        + '"required": true,'
+                        + '"value": ' + JSON.stringify(option.value) + '},'
+                        + '{"id": ' + JSON.stringify(template.fields[key].id + ' option' + optionCounter + ' points') + ','
+                        + '"type": "text",'
+                        + '"label": ' + JSON.stringify(template.fields[key].id + ' option' + optionCounter + ' points:') + ','
+                        + '"required": true,'
+                        + '"value": ' + JSON.stringify(option.points) + ','
+                        + '"pattern": "([0-9]+([.][5])?){1}([ ]*[-]{1}[ ]*[0-9]+([.][5])?)?",'
+                        + '"deleteOption": true},';
+                    optionCounter++;
+                }
+            }
+            // max points for the rubric
+            if (template.fields[key].id.toLowerCase().includes('points')) {
+                configData += '{"id": ' + JSON.stringify(template.fields[key].id + ' max') + ','
+                    + '"type": "text",'
+                    + '"label": ' + JSON.stringify(template.fields[key].id + ' max:') + ','
+                    + '"value": ' + JSON.stringify(template.fields[key].max) + ','
+                    + '"required": true,'
+                    + '"pattern": "[0-9]+([.][5])?",'
+                    + '"newOptionCounter": ' + optionCounter
+                    + '},';
+            }
+        }
+        configData += '{ "id": "line", '
+            + '"type": "line"}, '
+            + '{"id": "addCategoryButton", '
+            + '"type": "addCategory", '
+            + '"newCategoryCounter": 1}]}';
+        res.status(200).send(JSON.parse(configData));
+    })
+})
+
+/**
+ * @openapi
+ * '/api/rubrics/deleteTemplate/{templateTitle}':
+ *  delete:   
+ *     summary: Delete the template with the received thesis type.
+ *     tags:
+ *      - rubrics
+ *     parameters:
+ *      - name: templateTitle
+ *        in: path
+ *        description: The template which should be deleted.
+ *        required: true
+ *     responses:
+ *      204:
+ *        description: Template deleted Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/rubrics/deleteTemplate/:templateTitle').delete(verifyToken, (req, res) => {
+    const requestedTemplate = req.params['templateTitle'];
+
+    database.collection("gradingtemplates").deleteOne({ title: requestedTemplate }, (err) => {
+        if (err) {
+            console.log(err);
+        }
+        res.status(204).send();
+    })
+})
+
+/**
+ * @openapi
+ * '/api/rubrics/saveEditedTemplate':
+ *  post:   
+ *     summary: Save the edited or newly created thesis template.
+ *     tags:
+ *      - rubrics
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *          example:
+ *            {
+ *              'thesisTypeTitle': 'Thesis type title',
+ *              'NewCategory1': 'Category name',
+ *              'NewRubric1 name': 'Rubric name',
+ *              'NewRubric1 option1': 'Rubric option text',
+ *              'NewRubric1 option1 points': '0 - 1',
+ *              'NewRubric1 points max': '1',
+ *              'originalThesisTitle': 'New thesis type'
+ *            }
+ *     responses:
+ *      204:
+ *        description: Saved template changes Successfully
+ *      401:
+ *        description: Unauthorized / Not logged in
+ *      403:
+ *        description: Forbidden - e.g. jwt token expired
+ *      500:
+ *        description: Some server error
+ */
+app.route('/api/rubrics/saveEditedTemplate').post(verifyToken, (req, res) => {
+    let categoryPoints = 0;
+    let newTemplateString = '';
+    let rubricString = '';
+    let rubricName = '';
+    let optionsList = [];
+    let optionsListElement = [];
+
+    newTemplateString += '{"title": ' + JSON.stringify(req.body.thesisTypeTitle) + ','
+        + '"task": "grading",'
+        + '"fields": ['
+        + '{"id": "Conclusion",'
+        + '"type": "textarea",'
+        + '"label": "Conclusion:",'
+        + '"placeholder": "Conclusion",'
+        + '"required": true }';
+    for (let item in req.body) {
+        if (item.endsWith('category')) {
+            if (categoryPoints !== 0) {
+                newTemplateString = newTemplateString.replace('CATEGORYPOINTS', categoryPoints.toString());
+                categoryPoints = 0;
+            }
+            newTemplateString += ',{"id": "line",'
+                + '"type": "line"}'
+                + ',{"id": ' + JSON.stringify(req.body[item] + ' category') + ','
+                + '"type": "info",'
+                + '"heading": ' + JSON.stringify(req.body[item] + ':') + ','
+                + '"max": CATEGORYPOINTS }';
+        }
+        if (item.endsWith('name')) {
+            rubricName = req.body[item];
+            rubricString = ',{"id": "line",'
+                + '"type": "line"}'
+                + ',{"id": ' + JSON.stringify(req.body[item]) + ','
+                + '"type": "select",'
+                + '"required": true,'
+                + '"label": "' + req.body[item] + ' [max points: MAXPOINTS]:",'
+                + '"placeholder": ' + JSON.stringify('Select text for ' + req.body[item].replaceAll("'", "\'").toLowerCase()) + ','
+                + '"options": [';
+        }
+        if (item.includes('option') && !item.endsWith('title') && !item.endsWith('name') && !item.endsWith('points') && !item.endsWith('max')) {
+            optionsListElement = [(req.body[item])];
+        }
+        if (item.endsWith('points')) {
+            let optionPointsArray = req.body[item].replaceAll(' ', '').split('-');
+            optionsListElement.push(optionPointsArray[0]);
+            optionPointsArray[1] ? optionsListElement.push(optionPointsArray[1]) : optionsListElement.push('0');
+            optionsList.push(optionsListElement);
+        }
+        if (item.endsWith('max')) {
+            optionsList.sort(function (a, b) { return b[2] - a[2] });
+            optionsList.sort(function (a, b) { return b[1] - a[1] });
+            for (let option of optionsList) {
+                let optionPoints = '';
+                option[2] !== '0' ? optionPoints = option[1] + ' - ' + option[2] : optionPoints = option[1];
+                rubricString += '{"label": "' + option[0] + ' [' + optionPoints + ']",'
+                    + '"value": "' + option[0] + '",'
+                    + '"points": "' + optionPoints + '"}';
+                if (optionsList.indexOf(option) < optionsList.length - 1) {
+                    rubricString += ',';
+                }
+            }
+            rubricString += ']}';
+            rubricString = rubricString.replace('MAXPOINTS', req.body[item]);
+            newTemplateString += rubricString;
+            optionsList = [];
+            categoryPoints += Number(req.body[item]);
+            newTemplateString += ',{"id": "' + rubricName + ' points",'
+                + '"type": "points",'
+                + '"label": "Points for ' + rubricName.toLowerCase() + ':",'
+                + '"visible": false,'
+                + '"required": true,'
+                + '"max": ' + req.body[item] + ','
+                + '"pattern": "[0-9]+([.][5])?"}'
+                + ',{"id": "' + rubricName + ' editarea",'
+                + '"type": "editarea",'
+                + '"label": " ' + rubricName + ' text (edit if needed):",'
+                + '"visible": false,'
+                + '"required": true}';
+        }
+    }
+    newTemplateString += ']}';
+    newTemplateString = newTemplateString.replace('CATEGORYPOINTS', categoryPoints.toString());
+
+    database.collection("gradingtemplates").findOne({ title: req.body.originalThesisTitle }, (err, templateFound) => {
+        if (err) {
+            console.log(err);
+        }
+        if (templateFound) {
+            database.collection("gradingtemplates").deleteOne({ title: req.body.originalThesisTitle }, (err) => {
+                if (err) {
+                    console.log(err);
+                }
+            })
+        }
+        database.collection("gradingtemplates").insertOne(JSON.parse(newTemplateString), (err) => {
+            if (err) {
+                console.log(err);
+            }
+            res.status(204).send();
+        })
+    })
+})
+
+
+
+// ===== SERVERSTART =====
+
+// start the server/backend on the port defined at the top
+app.listen(PORT, () => {
+    console.log('Server started! Running on port: ' + PORT);
+})

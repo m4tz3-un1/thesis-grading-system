@@ -1,0 +1,126 @@
+<h1 class="headline">
+    Create user
+</h1>
+
+<!-- A short description shown to the user what the page does. -->
+<p class="margin20">
+    You can create new users with the form below. <br>
+    Please make sure that this person is allowed to use the program.
+</p>
+
+<!-- This form contains all the fileds for creating a user. The fields are defined in the register.component.ts file.
+     The form is splitted into 3 groups for personal data, the data of the professorial chair and the login data. -->
+<div class="formArea">
+    <form [formGroup]="createUserForm">
+        <!-- Section for the personal data. 
+             Contains fields for acadamic title, first and last name, email and phone. -->
+        <h4 class="sectionLabel">
+            Personal data:
+        </h4>
+        <div class="formSection">
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="academicTitle">
+                        Academic title:
+                    </label>
+                    <input type="text" id="academicTitle" formControlName="academicTitle">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="firstName">
+                        First name: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="text" id="firstName" formControlName="firstName">
+                </div>
+                <div class="formElement">
+                    <label for="lastName">
+                        Last name: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="text" id="lastName" formControlName="lastName">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="email">
+                        Email: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="email" id="email" formControlName="email">
+                </div>
+                <div class="formElement">
+                    <label for="phone">
+                        Phone: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="tel" id="phone" formControlName="phone">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="website">
+                        Website:
+                    </label>
+                    <input type="url" id="website" formControlName="website">
+                </div>
+            </div>
+        </div>
+        <!-- Section for the login data and the role of the user. -->
+        <h4 class="sectionLabel">
+            Login data:
+        </h4>
+        <div class="formSection">
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="username">
+                        Username: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="text" id="username" formControlName="username">
+                </div>
+                <div class="formElement">
+                    <label for="password">
+                        Password: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="password" id="password" formControlName="password">
+                    <div *ngIf="createUserForm.get('password')?.errors" [ngClass] = "'error'"> 
+                        <div *ngIf="createUserForm.get('password')?.hasError('pattern')" class="error-message">
+                            Password must contain at least one of each:
+                            <ul class="error-list">
+                                <li>Length 8+ characters</li>
+                                <li>Uppercase letter</li>
+                                <li>Lowercase letter</li>
+                                <li>Digits</li>
+                                <li>Special charaters of following list: <br>
+                                    <span>     # &#64; . : , ; $ + = ! ? ( ) " \ ' % & / _ - </span>
+                                </li>
+                            </ul>
+                        </div>
+                      </div>
+                    <p style="margin-top: 5px;">
+                        <input type="checkbox" (click)="changeVisibilityOfPassword()">
+                        <small>Show/Hide Password </small>
+                    </p>
+                </div>
+            </div>
+            <div class="formRow" style="margin-top: -45px;">
+                <div class="formElement">
+                    <label for="isAdmin">
+                        User role: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="isAdmin" formControlName="isAdmin" value="false">
+                        User
+                    </label>
+                </div>
+                <div class="formElement">
+                    <label for="isAdmin">
+                        <br>
+                    </label>
+                    <label>
+                        <input type="radio" name="isAdmin" formControlName="isAdmin" value="true">
+                        Admin
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="submit-button" [disabled]="createUserForm.invalid" (click)="CreateUser()">Create user</button>
+    </form>
+</div>

@@ -1,0 +1,317 @@
+<div class="container">
+
+  <!-- Here is shown a subtitle on the page if one is given in the jsonConfig. -->
+  <div *ngIf="jsonConfig.title" class="title-text">
+    <span *ngIf="jsonConfig.task === 'grading'">
+      <span class="boldSpan"> Thesis type: </span> {{ jsonConfig.title }} <br>
+      <span class="boldSpan"> Thesis degree: </span> {{ gradingDataService.getThesisDegree() }} 
+    </span>
+    <span *ngIf="jsonConfig.task === 'editTemplate'">
+      <span *ngIf="originalFormTitle === 'New thesis type'" class="boldSpan">Create new thesis type</span>
+      <span *ngIf="originalFormTitle !== 'New thesis type'">
+        <span class="boldSpan"> Edit template for thesis type: </span> {{ jsonConfig.title }} 
+      </span>
+    </span>
+    <span *ngIf="jsonConfig.task === 'changeUserList'">
+      <span class="boldSpan"> {{ jsonConfig.title }} </span>
+    </span>
+  </div>
+
+  <!-- Here the form based on the jsonConfig is displayed. For this it is iterated over all fields of the 
+   jsonConfig and based on the type of the field the respective information are shown in the form. -->
+  <form [formGroup]="dynamicForm" class="formArea">
+    <div *ngFor="let field of jsonConfig.fields">
+      <ng-container [ngSwitch]="field.type">
+
+        <!-- Seperation lines are created here. -->
+        <ng-container *ngSwitchCase="'line'">
+          <hr class="seperationLine"><br> 
+        </ng-container>
+        
+        <!-- Creation of an info text field to display additional informations to parts of the form. -->
+        <ng-container *ngSwitchCase="'info'">
+          <h3 class="title-text padding-top-10"> 
+            {{field.heading}}
+          </h3>
+          <p>
+            {{field.infotext}}
+          </p>
+        </ng-container>
+
+        <!-- Username type fields are used for showing the name of a user and also a button for delting this user. 
+         This field is only used in the functionality to edit the list of all users in the admin panel. -->
+        <div *ngSwitchCase="'username'" class="formElement"> 
+          <div class="floatingRight">
+            <button class="button25 margin-top-10" (click)="deleteUser(field.id)">
+              Delete user
+            </button>
+          </div>
+          <label>
+            User:
+          </label>
+          {{field.value}}
+        </div>
+
+        <!-- Normal text fields. The fields are set to a smaller width and can contain placeholders if needed.
+         There are also the options for different buttons that can be added based on the given field data. 
+         For example there is the possibility to add a button delelte rubric here for the task to edit thesis templates. 
+         This is done inside the text field div so that it looks cleaner and more compact when displayed. -->
+        <div *ngSwitchCase="'text'" class="formElement"> 
+          <label for="field.id">
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <!-- The input field itself. -->
+          <input type="text" [formControlName]="field.id" [required]="field.required" [placeholder]="field.placeholder ? field.placeholder : ''" class="normalSize" (input)="field.id.includes('points') ? changePoints(field.id) : ''">
+          <!-- The possible buttons based on the given data. -->
+          <div *ngIf="field.deleteOption" class="floatingRight">
+            <button class="button25 margin-top-1rem" (click)="deleteOption(field.id)">
+              Delete option
+            </button>
+          </div>
+          <div *ngIf="field.newOptionCounter" class="floatingRight">
+            <button class="button25 margin-top-1rem" (click)="addOption(field.id, field.newOptionCounter)">
+              Add text for rubric
+            </button>
+            <button class="button25 margin-top-1rem margin-left-10" (click)="deleteRubric(field.id)">
+              Delete rubric
+            </button>
+          </div>
+        </div>
+
+        <!-- Longer text field. Its more or less the same than the text field except its larger. -->
+        <div *ngSwitchCase="'longtext'" class="formElement"> 
+          <label for="field.id" class="floatingLeft">
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <span *ngIf="field.id === 'thesisTitle'" style="float: right;">
+            [max 320 characters]
+          </span>
+          <input t type="text" [formControlName]="field.id" [required]="field.required" class="longSize" 
+            [placeholder]="field.placeholder ? field.placeholder : ''" [maxlength]="field.id === 'thesisTitle'? 320:''">
+          <div *ngIf="field.id.endsWith('category')" class="floatingRight">
+            <button (click)="addRubric(field.id, field.newRubricCounter)" class="button25 margin-left-10 margin-top-1rem">
+              Add new rubric
+            </button>
+            <button (click)="deleteCategory(field.id)" class="button25 margin-left-10 margin-top-1rem">
+              Delete category
+            </button>
+          </div>
+        </div>
+
+        <!-- Password fields. -->
+        <div *ngSwitchCase="'password'" class="formElement"> 
+          <label [id]="field.id + 'Label'">
+            {{field.label}}
+          </label>
+          <input type="password" [formControlName]="field.id" [id]="field.id" [required]="field.required" class="longSize" [placeholder]="field.placeholder ? field.placeholder:''" (input)="setPasswortFieldsToRequired(); field.id !== 'oldPassword' ? checkPasswordMatch():''">
+          <div *ngIf="field.id === 'newPassword' && dynamicForm.get('newPassword')?.hasError('pattern')" class="error-message">
+            Password must contain at least one of each:
+            <ul class="error-list">
+              <li>Length 8+ characters</li>
+              <li>Uppercase letter</li>
+              <li>Lowercase letter</li>
+              <li>Digits</li>
+              <li>Special charaters of following list: <br>
+                  <span>     # &#64; . : , ; $ + = ! ? ( ) " \ ' % & / _ - </span>
+              </li>
+            </ul>
+          </div>
+          <p style="margin-top: 5px; margin-bottom: 0px;">
+            <input type="checkbox" (click)="changeVisibilityOfPassword(field.id)">
+            <small>Show/Hide Password </small>
+          </p>
+          <p *ngIf="!passwordsMatching && field.id === 'confirmNewPassword'" class="error-message">
+            New password and confirm new password are not identical.
+          </p>
+        </div>
+
+        <!-- Field for numbers. -->
+        <div *ngSwitchCase="'number'" class="formElement"> 
+          <label for="field.id"> 
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <input type="number" [formControlName]="field.id" [required]="field.required" class="normalSize">
+        </div>
+
+        <!-- Field for a date. -->
+        <div *ngSwitchCase="'date'" class="formElement"> 
+          <label for="field.id"> 
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <input type="date" [formControlName]="field.id" [required]="field.required" class="normalSize">
+        </div>
+
+        <!-- Field for times. -->
+        <div *ngSwitchCase="'time'" class="formElement"> 
+          <label for="field.id"> 
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <input type="time" [formControlName]="field.id" [required]="field.required" class="normalSize">
+        </div>
+
+        <!-- Here are generated the fields for textareas. Here can also be displayed placeholders if needed. -->
+        <div *ngSwitchCase="'textarea'" class="formElement">
+          <label for="field.id" style="float: left;">
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <span *ngIf="field.id === 'Conclusion'" style="float: right;">
+            [max 1600 characters]
+          </span>
+          <textarea [class]="field.id !== 'thesisTitle'? 'normalTextarea': 'thesisTitleArea'" [formControlName]="field.id" [placeholder]="field.placeholder? field.placeholder:''" [required]="field.required" [maxlength]="field.id === 'Conclusion'? 1600:''">
+          </textarea> 
+          <div *ngIf="field.id === 'thesisTitle' && dynamicForm.get('thesisTitle')?.hasError('pattern')" class="error-message">
+            Thesis title can contain only english and german letters, numbers, spaces and the following symbols   
+            . : , ; ! ? ( ) &#91; &#93; &#123; &#125; " &#39; % & / - 
+          </div>
+        </div>
+
+        <!-- This field is called admin. I use it to display the current role of a user when the list of users is edited. 
+         Also there is a button added to change the role of the user. This field doesn't contain an input. 
+         It is only a div area where the role is displayed. This ensures that only the two given roles can be used with the button click. -->
+        <div *ngSwitchCase="'admin'" class="formElement">
+          <div class="floatingRight">
+            <button  class="button25 margin-top-10" (click)="changeRole(field.id)">
+              Change user role
+            </button>
+          </div>
+          <label>
+            Current role:
+          </label>
+          <div>
+            <span *ngIf="field.isAdmin">
+              Admin
+            </span>
+            <span *ngIf="!field.isAdmin">
+              User
+            </span>
+          </div>
+        </div>
+
+        <!-- Select fields. It is mostly used to display the rubrics for the grading. Mat-Select is used because the options are very long and with normal select linewrap is not possible. Also a functionality to make the points and edit fields visible when choosing a rubric is added. -->
+        <div *ngSwitchCase="'select'" class="formElementSelect"> 
+          <label for="field.id">
+            {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+          </label>
+          <mat-form-field appearance="outline">
+            <mat-select
+              [formControlName]="field.id"
+              [required]="field.required"
+              [placeholder]="field.placeholder"
+              panelClass="custom-select-panel"
+              (selectionChange)="setVisibilityAndValueForPointsAndText(field.id)"
+            >
+              <mat-option
+                *ngFor="let option of field.options"
+                [value]="option.value"
+                class="option-field"
+              >
+                {{ option.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Fields for points of the rubrics. Here also buttons for changing the points are added. -->
+        <div *ngSwitchCase="'points'">
+          <div [id]=field.id *ngIf="field.visible" class="formElement">
+            <label for="field.id">
+              {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+            </label>
+            <button (click)="addOrSubtractPoints(field.id, 'sub')" class="mathButton">-</button>
+            <input type="text" [formControlName]="field.id" [placeholder]="field.placeholder" [required]="field.required" class="smallSize" (input)="changePoints(field.id)">
+            <button (click)="addOrSubtractPoints(field.id, 'add')" class="mathButton">+</button>
+            <div *ngIf="dynamicForm.get(field.id)?.errors" [ngClass] = "'error'"> 
+              <div *ngIf="dynamicForm.get(field.id)?.hasError('pattern')" class="error-message">
+                  Only positive integers and numbers with .5 decimal without spaces are allowed.
+              </div>
+              <div *ngIf="dynamicForm.get(field.id)?.hasError('max')" class="error-message">
+                  The points are to high. Allowed are maximum {{field.max}} points.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- The fields for editing the text of the choosen rubric. -->
+        <div *ngSwitchCase="'editarea'">
+          <div [id]=field.id *ngIf="field.visible" class="formElement">
+            <label for="field.id" class="floatingLeft">
+              {{field.label}} <span *ngIf="field.required" style="color:red; font-size:80%">&#42;</span>
+            </label>
+            <span class="floatingRight">
+              [max 2750 characters]
+            </span>
+            <textarea class="textarea normalTextarea" [formControlName]="field.id" [placeholder]="field.placeholder" [required]="field.required" maxlength="2750">
+            </textarea>
+          </div>
+        </div>
+
+        <!-- Buttons for adding new rubrics and deleting the whole thesis template. -->
+        <div *ngSwitchCase="'addCategory'" class="floatingRight">
+          <button (click)="addCategory(field.newCategoryCounter)" class="button25 margin-top-1rem">Add new category</button>
+          <span *ngIf="originalFormTitle === 'New thesis type'">
+            <button style="visibility: hidden" class="button25 margin-left-10 margin-top-1rem"></button>
+          </span>
+          <span *ngIf="originalFormTitle !== 'New thesis type'">
+            <button (click)="deleteTemplate()" class="button25 margin-left-10 margin-top-1rem">
+              Delete thesis type
+            </button>
+          </span>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Submit buttons labeled based on the task that is performed. -->
+    <button class="submit-button" type="submit" [disabled]="dynamicForm.invalid" (click)="onSubmit(jsonConfig.task)">
+      <div *ngIf="jsonConfig.task === 'grading'" class="centering">
+        Generate PDF   <span *ngIf="loading === true" class="loader"></span>
+      </div>
+      <span *ngIf="jsonConfig.task === 'editTemplate'">
+        Save edited template
+      </span>
+      <span *ngIf="jsonConfig.task === 'changeUserList'">
+        Back to admin panel
+      </span>
+      <span *ngIf="jsonConfig.task === 'editUserData'">
+        Save account info 
+      </span>
+    </button>
+  </form>
+</div>
+
+<!-- If task is grading the sum of points at the moment are shown next to the form. -->
+<div *ngIf="jsonConfig.task === 'grading' || jsonConfig.task === 'editTemplate'" class="gradeBox">
+  <h3>
+    Summed points:
+  </h3>
+  <table>
+    <tr>
+      <td>
+        Sum of points:
+      </td>
+      <td>
+        {{totalPointsAtMoment}}
+      </td>
+    </tr>
+    <tr *ngIf="jsonConfig.task === 'editTemplate'">
+      <td>
+        <br>
+      </td>
+    </tr>
+    <tr *ngIf="jsonConfig.task === 'grading'">
+      <td>
+        Grade:
+      </td>
+      <td>
+        {{gradeAtMoment}}
+      </td>
+    </tr>
+  </table>
+  <button class="submit-button pointsButton" type="submit" [disabled]="dynamicForm.invalid" (click)="onSubmit(jsonConfig.task)">
+    <div *ngIf="jsonConfig.task === 'grading'" class="centering">
+      Generate PDF   <span *ngIf="loading === true" class="loader"></span>
+    </div>
+    <span *ngIf="jsonConfig.task === 'editTemplate'">
+      Save edited template
+    </span>
+  </button>
+</div>

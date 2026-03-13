@@ -1,0 +1,106 @@
+\documentclass[a4paper, 11pt]{scrartcl}
+
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+
+\usepackage[left=1.5cm, right=2cm, top=0.8cm, bottom=2.5cm, footskip=1cm]{geometry} 
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.2in}
+
+\usepackage{lastpage}
+\usepackage[headsepline]{scrlayer-scrpage}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\ofoot[\textnormal{Page \thepage\ of \pageref{LastPage}}]{\textnormal{Page \thepage\ of \pageref{LastPage}}}
+\ohead{
+    \includegraphics[height=1cm]{logo.png}
+}
+
+\usepackage[x11names]{xcolor}
+\usepackage{colortbl}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{marvosym}
+\usepackage{ragged2e}
+\usepackage{ltablex}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+
+\begin{document}
+
+\thispagestyle{scrplain}
+
+\begin{raggedleft}
+    \includegraphics[height=1.5cm]{logo.png}
+
+    \vspace{-0.9cm}
+    \noindent\rule{\textwidth}{1pt}
+    
+\end{raggedleft}
+
+\begin{multicols}{2}
+    \begin{raggedright}
+        \vspace*{3cm}
+        Prüfungsamt des \linebreak
+        Instituts für Informatik \linebreak
+        -- im Hause --
+        
+    \end{raggedright}
+    
+    \columnbreak
+
+    \begin{raggedleft}
+        EXAMINERTITLE EXAMINERFIRSTNAME EXAMINERLASTNAME
+    
+        PROFESSORSHIP \linebreak 
+        Johann Wolfgang Goethe-Universität \linebreak
+        Fb12: Informatik und Mathematik
+
+        INSTITUTE \linebreak 
+        ADRESS \linebreak
+        ZIPCODE CITY
+
+        \Telefon PHONE \linebreak
+        MAILADRESS \linebreak
+        \href{WEBSITE}{\textcolor{blue}{WEBSITE}} \linebreak
+
+        \today
+        
+    \end{raggedleft}   
+    
+\end{multicols}
+
+\begin{raggedright}
+    \textbf{Gutachten zu der Abschlussarbeit:} \linebreak
+    \textbf{\glqq THESISTITLE\grqq}
+
+    von STUDENTLASTNAME, STUDENTFIRSTNAME \linebreak
+    MN: MATRIKELNUMBER
+    
+\end{raggedright}
+
+This thesis by STUDENTLASTNAME fulfills all the needed requirements to be accepted as a BA/MA. OBERSEMINAR
+
+CONCLUSION
+
+According to the following detailed evaluation the received points are \textbf{TOTALPOINTS} and overall grad is: \textbf{GRADE}.
+
+Frankfurt am Main, \today
+
+\includegraphics[height=2cm]{addSignature.png} 
+
+EXAMINERTITLE EXAMINERFIRSTNAME EXAMINERLASTNAME
+
+\newpage
+
+\newgeometry{left=1.5cm, right=2cm, top=2.5cm, bottom=2.5cm, footskip=1cm}
+
+\begin{tabularx}{\textwidth}{|p{3.5cm}|X|r|r|}
+    \hline 
+    \rowcolor{lightgray}
+    \textbf{Criteria} & \textbf{Explanation} & \textbf{Max.} & \textbf{Reached} \\
+    \hline 
+    TABLE
+\end{tabularx}
+
+\end{document}

@@ -1,0 +1,11 @@
+<h1 class="headline">
+    Edit account info
+</h1>
+
+<p class="margin20">
+    You can edit your personal information with the form below.
+</p>
+
+<ng-container *ngIf="formJsonConfig">
+    <app-dynamic-form [jsonConfig]="formJsonConfig"></app-dynamic-form>
+</ng-container>

@@ -1,0 +1,247 @@
+.container {
+  float: left;
+  margin-left: 20px;
+  margin-bottom: 15px;
+}
+
+.title-text {
+  color: #444444;
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+.padding-top-10 {
+  padding-top: 10px;
+}
+
+.boldSpan {
+  font-size: large;
+  font-weight: 600;
+}
+
+.formArea {
+  width: 760px;
+  padding: 10px;
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: lighten(#6699cc, 33%);
+}
+
+.formElement {
+  width: 760px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.formElementSelect {
+  width: 800px;
+  display: inline-block;
+  margin-bottom: -10px;
+}
+
+.formElement > label, .formElementSelect > label {
+  display: block;
+  font-size: 0.9rem;
+  padding-bottom: 3px;
+  font-style: italic;
+}
+
+.formElement > input {
+  height: 42px;
+  font-size: 16px;
+  padding-left: 10px;
+}
+
+.mathButton {
+  width: 40px;
+  height: 40px;
+  background-color: lighten(#6699cc, 25%);
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  font-size: larger;
+}
+
+.smallSize {
+  width: 230px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.normalSize {
+  width: 320px;
+}
+
+.longSize {
+  width: 740px;
+}
+
+.seperationLine {
+  height: 5px;
+  border-top: 1px solid #6699cc;
+  border-bottom: 2px solid #6699cc;
+  border-right: 0px; 
+  border-left: 0px;
+  margin-bottom: 0px; 
+}
+
+.formElementSelect > mat-form-field {
+  width: 760px;
+}
+
+.option-field:hover {
+  background-color: lighten(#6699cc, 25%) !important;
+}
+
+.formElement > textarea {
+  width: 735px;
+  min-width: 735px;
+  max-width: 735px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 5px;
+  font-size: 16px;
+}
+
+.normalTextarea {
+  height: 160px;
+}
+
+.thesisTitleArea {
+  height: 80px;
+}
+
+.textarea {
+  margin-bottom: 10px;
+}
+
+.gradeBox {
+  float: right;
+  background-color: lighten(#6699cc, 25%);
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  width: 350px;
+  height: 150px;
+  padding-bottom: 10px;
+  margin-right: 10px;
+  margin-left: 75px;
+  margin-top: 42px;
+  position: sticky;
+  top: calc(100vh - 187px);
+}
+
+.gradeBox h3 {
+  color: #444444;
+  padding-top: 0px;
+  padding-left: 10px;
+}
+
+.gradeBox table {
+  border-spacing: 10px 0px;
+}
+
+.button25 {
+  background-color: lighten(#6699cc, 25%);
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  color: black;
+  height: 2rem;
+  width: 10rem;
+}
+
+.margin-top-1rem {
+  margin-top: 1rem;
+}
+
+.margin-left-10 {
+  margin-left: 10px;
+}
+
+.floatingLeft {
+  float: left;
+}
+
+.floatingRight {
+  float: right;
+}
+
+.submit-button {  
+  background-color: #6699cc;
+  padding: 5px;
+  border-radius: 5px;
+  color: black;
+  margin-top: 1rem;
+  height: 2rem;
+  width: 10rem;
+  font-size: 14px;
+}
+
+.submit-button:disabled {
+  background-color: gray;
+  border: none;
+  color: white;
+  margin-top: 1rem;
+  height: 2rem;
+  width: 10rem;
+  font-size: 14px;
+}
+
+.pointsButton {
+  margin-left: 10px;
+}
+
+.error {
+  height: auto;
+  margin: 0px;
+  width: 759px;
+}
+
+.error-message {
+  color: red;
+  border: 1px solid red;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  padding: 3px;
+}
+
+.error-list {
+  padding-left: 12px;
+}
+
+.logout-warning {
+  font-style: normal;
+  font-size: 1rem;
+  height: auto;
+  margin: 0px;
+  width: 748px;
+  border: 2px solid red;
+  margin-bottom: 10px;
+  padding: 3px;
+}
+
+.centering {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader {
+  margin-left: 5px;
+  width: 15px;
+  height: 15px;
+  border: 4px solid lighten(#6699cc, 25%);
+  border-bottom-color: #6699cc;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+} 

@@ -1,0 +1,78 @@
+<h1 class="headline"> 
+    Admin panel 
+</h1>
+
+<div *ngIf="!formJsonConfig && !thesisTypeList">
+    <p class="margin20">
+        In the following you can decide what to do:
+    </p>
+
+    <div>
+        <h3 class="subHeadline">
+            User management:
+        </h3>
+        <button class="normalButton">
+            <a routerLink="/register">Create new user</a>
+        </button>
+
+        <br><br>
+
+        <button (click)="getUserList()" class="normalButton">
+            Change user information
+            <span title="Get the list of all users and delete users and/or change their role. All other information can changed by the user itself." data-toggle="tooltip">
+                <i class="fa fa-info-circle" aria-hidden="true"></i>
+            </span>
+        </button>
+    </div>
+
+    <div>
+        <h3 class="subHeadline">
+            Rubrics management:
+        </h3>
+        <button (click)="newThesisType()" class="normalButton">
+            Create new thesis type
+        </button>
+
+        <br><br>
+
+        <button (click)="chooseThesisType()" class="normalButton">
+            Choose thesis type for editing
+        </button>
+    </div>
+</div>
+
+<div *ngIf="thesisTypeList && !formJsonConfig">
+    <p class="margin20">
+        Please choose which thesis type template you want to edit.
+    </p>
+
+    <div class="formArea">
+        <form [formGroup]="chooseTemplateTypeForm" (ngSubmit)="getTemplateFromBackend()">
+            <div class="formElementSelect">
+                <mat-form-field appearance="outline">
+                    <mat-select
+                        formControlName="thesisTypeSelect"
+                        required="true"
+                        placeholder="Choose thesis type to edit"
+                        panelClass="custom-select-panel"
+                    >
+                        <mat-option
+                            *ngFor="let option of thesisTypeList"
+                            [value]="option.id"
+                            class="option-field"
+                        >
+                            {{ option.title }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+            <button type="submit" class="submit-button" [disabled]="chooseTemplateTypeForm.invalid">
+                Edit choosen type
+            </button>
+        </form>
+    </div>
+</div>
+
+<div *ngIf="formJsonConfig && formJsonConfig.fields!=undefined" class="dynamic-form-container">
+    <app-dynamic-form [jsonConfig]="formJsonConfig"></app-dynamic-form>
+</div>

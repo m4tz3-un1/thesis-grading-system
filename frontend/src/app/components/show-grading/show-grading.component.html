@@ -1,0 +1,38 @@
+<div id="showingContainer">
+    <h1 class="headline">
+        PDF file generated
+    </h1>
+
+    <p class="margin20">
+        The pdf file shown below can be downloaded with the respective button. <br>
+        If there are errors in the generated pdf file you can click the button below to edit your inputs and generate a new pdf from the new input. 
+    </p>
+
+    <div id="showArea">
+        <pdf-viewer
+        [src]="pdfUrl"
+        [rotation]="0"
+        [original-size]="false"
+        [show-all]="true"
+        [fit-to-page]="false"
+        [zoom]="0.98"
+        [zoom-scale]="'page-width'"
+        [stick-to-page]="false"
+        [render-text]="true"
+        [external-link-target]="'blank'"
+        [autoresize]="true"
+        [show-borders]="false"
+        style="width: 55%; height: 660px;"
+        ></pdf-viewer>
+    </div>
+
+    <div class="margin20">
+        <button class="normalButton" (click)="downloadPDF()">Download PDF</button>
+        <button class="normalButton" (click)="editData()">Edit input</button>
+        <button class="normalButton" (click)="gradeNewThesis()">Grade new thesis</button>
+    </div>
+</div>
+
+<div *ngIf="formJsonConfig" class="dynamic-form-container">
+    <app-dynamic-form [jsonConfig]="formJsonConfig"></app-dynamic-form>
+</div>

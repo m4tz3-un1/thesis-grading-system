@@ -1,0 +1,7 @@
+.env
+node_modules
+.gitignore
+/files/outputfiles/.gitkeep
+/files/savefiles/.gitkeep
+/files/userfiles/.gitkeep
+/files/templatefiles/pictures/signaturePictures/.gitkeep

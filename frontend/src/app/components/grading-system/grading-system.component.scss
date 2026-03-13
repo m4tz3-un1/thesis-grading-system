@@ -1,0 +1,88 @@
+table{
+  margin-left: 20px;
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: lighten(#6699cc, 33%);
+  border-spacing: 10px 0px;
+}
+
+.seperator {
+  padding-bottom: 10px;
+}
+
+.dynamic-form-container {
+  display: flex;
+}
+
+.sectionLabel {
+  margin-bottom: 5px;
+  margin-top: 5px;
+  font-weight: 500;
+  color: #ff9900;
+}
+
+.formArea {
+  margin-left: 20px;
+  width: 580px;
+}
+
+.formRow {
+  width: 550px;
+  display: flex;
+  gap: 20px;
+}
+
+.formElement {
+  width: auto;
+  display: inline-block;
+}
+
+.formElement > label {
+  display: block;
+  font-size: 0.8rem;
+  padding-bottom: 3px;
+}
+
+.formElement > span {
+  font-size: 0.8rem;
+  padding-bottom: 3px;
+}
+
+.formElement > input {
+  height: 22px;
+}
+
+#studentFirstName, #studentLastName {
+  width: 172px;
+}
+
+#matriculationNumber {
+  width: 150px;
+}
+
+#thesisTitle {
+  width: 565px;
+}
+
+.error {
+  height: auto;
+  margin: 0px;
+}
+
+.error-message {
+  color: red;
+  border: 1px solid red;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  padding: 3px;
+}
+
+.floatingLeft {
+  float: left;
+}
+
+.floatingRight {
+  float: right;
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>thesis-grading-system</title><meta name="description" content="Documentation for thesis-grading-system"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">thesis-grading-system</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h2>thesis-grading-system</h2></div><div class="tsd-panel tsd-typography"><a id="md:thesisgradingsystem" class="tsd-anchor"></a><h1 class="tsd-anchor-link">ThesisGradingSystem<a href="#md:thesisgradingsystem" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><a id="md:the-application" class="tsd-anchor"></a><h2 class="tsd-anchor-link">The application<a href="#md:the-application" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The application is part of my bachelor thesis. The goal of the thesis is to create a system which professors can use to grade theses of students based on predefined rubrics.</p>
+<p>To ensure that only professors can grade theses a login system is implemented. After the login the grading starts with the input of the general information of the student and the thesis. Also the type of the thesis has to be choosen out of the given possibilities.</p>
+<p>These infos are automatically filled into the grading form and the grading can be done with the predefined rubrics. The text of the rubrics can be edited as well as the points. The points are summed up and from it will automatically be generated the grade. The evaluation report will be generated as a PDF document. The PDF can be viewed in the browser and also be downloaded.</p>
+<p>Each user can access an account page where most of the account information can be edited. For editing the role of the user the admin panel is needed. At this admin panel the administrators of the site can edit the rubrics and also can add or remove users.</p>
+<a id="md:how-to-set-up-and-start-the-program" class="tsd-anchor"></a><h2 class="tsd-anchor-link">How to set up and start the program<a href="#md:how-to-set-up-and-start-the-program" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><blockquote>
+<p>As operating system is used Windows 10 and the whole setup instructions are only tested on this system. The needed steps for the installation on other systems may differ.</p>
+</blockquote>
+<a id="md:used-technologies" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Used technologies<a href="#md:used-technologies" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>Mongoose (for MongoDB) version 8.8.2</li>
+<li>Express version 4.19.2</li>
+<li>Angular version 17.2.0</li>
+<li>Node.js version 20.11.1</li>
+<li>LaTeX</li>
+</ul>
+<p>The list of technologies contains only the most relevant technologies. More packages are used to make some tasks easier.</p>
+<a id="md:general-steps" class="tsd-anchor"></a><h3 class="tsd-anchor-link">General steps<a href="#md:general-steps" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>You need to clone the git repository to your local machine to be able to run the code. Alternatively you need to unpack the received ZIP folder to your system.</p>
+<a id="md:setup-program-directly" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Setup program directly<a href="#md:setup-program-directly" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><a id="md:setup-of-backend" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Setup of backend<a href="#md:setup-of-backend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><ol>
+<li>
+<p>Install Node.js on your system if not already installed. Node.js can be downloaded <a href="https://nodejs.org/en/download/prebuilt-installer/current">here</a>.</p>
+</li>
+<li>
+<p>Install LaTeX on your system if not already installed. After installing LaTeX a restart of your system is recommended to ensure that the program works as expected. TeXLive can be found <a href="https://tug.org/texlive/">here</a> where you can download LaTeX for your system.</p>
+</li>
+<li>
+<p>In your terminal navigate to the backend folder and execute the following command:</p>
+<pre><code> node server.js
+</code></pre>
+</li>
+</ol>
+<a id="md:setup-of-frontend" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Setup of frontend<a href="#md:setup-of-frontend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><ol>
+<li>
+<p>Install Node.js on your system if not already installed. Node.js can be downloaded <a href="https://nodejs.org/en/download/prebuilt-installer/current">here</a>.</p>
+</li>
+<li>
+<p>Install Angular CLI onn your system if not already installed. Further information about Angular can be found <a href="https://angular.dev/installation">here</a>.</p>
+</li>
+<li>
+<p>In your terminal navigate to the frontend folder and execute the following command:</p>
+<pre><code> ng serve --open
+</code></pre>
+</li>
+</ol>
+<a id="md:setup-program-using-docker" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Setup program using Docker<a href="#md:setup-program-using-docker" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Install Docker on your computer if not allready installed. You can use for example <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a>. This is a Docker GUI which can make the use of it later more easy if you are not familiar with the use of Docker.</p>
+<a id="md:setup-of-backend-1" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Setup of backend<a href="#md:setup-of-backend-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><ol>
+<li>
+<p>Make sure that Docker is running on your system.</p>
+</li>
+<li>
+<p>Navigate in your terminal to the backend folder.</p>
+</li>
+<li>
+<p>In the backend folder run the command for creating an image from the Dockerfile. You need to replace <em>name</em> with the name you want to give the image. You can add a version or something similar to the name seperated by a colon. This would look something like <em>name:v1</em>.</p>
+<pre><code> docker build -t name .
+</code></pre>
+</li>
+</ol>
+<blockquote>
+<p>Because of the installation of texlive-full this process will take some time. Please be prepared to wait for up to 20 minutes.</p>
+</blockquote>
+<ol start="4">
+<li>
+<p>Wait till the image is built. After this you can run the container either from Docker Desktop or direktly from the console. Make sure to set the port to 8000, as shown in the command below, to ensure the programm works as expected. Here you also have to replace <em>name</em> with the name of the image you created in step 3.</p>
+<pre><code> docker run -p 8000:8000 name
+</code></pre>
+</li>
+</ol>
+<a id="md:setup-of-frontend-1" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Setup of frontend<a href="#md:setup-of-frontend-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><ol>
+<li>
+<p>Make sure that Docker is running on your system.</p>
+</li>
+<li>
+<p>Navigate in your terminal to the frontend folder.</p>
+</li>
+<li>
+<p>In the frontend folder run the command for creating an image from the Dockerfile. You need to replace <em>name</em> with the name you want to give the image. You can add a version or something similar to the name seperated by a colon. This would look something like <em>name:v1</em>.</p>
+<pre><code> docker build -t name .
+</code></pre>
+</li>
+<li>
+<p>Wait till the image is built. After this you can run the container either from Docker Desktop or direktly from the console. Here you also have to replace <em>name</em> with the name of the image you created in step 3. Also in this case the <em>port</em> can be freely choosen. I have tested it with port 4200 and would recommend to set the port to 4200 to ensure the programm works as expected.</p>
+<pre><code> docker run -p port:4200 name
+</code></pre>
+</li>
+</ol>
+<a id="md:how-to-use-the-program" class="tsd-anchor"></a><h2 class="tsd-anchor-link">How to use the program<a href="#md:how-to-use-the-program" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>First you need to log in with your credentials. For the examiners to be able to evaluate the thesis a test user was created and the credentials for it are attached in the credentials.txt file. After the login you will be redirected to the input of the general data. There you add the general data for the student and the thesis and continue with the button below the input form. <br>
+The next page shows the grading page. There are shown the rubrics with dropdown menus. You can choose the option for each rubric and give points respectively in the field below the rubric and edit the choosen option text if you want. Then there will be a PDF file generated from these inputs. <br>
+The generated PDF file is shown in the next page. With the buttons below you can download the PDF file or edit it - if for example there are some typos or something similar in it. <br>
+If you have admin privileges you can also access the admin panel. There you can add new users, edit the list of users (their role or delete them), and also thesis templates can be edited. <br>
+Every user can edit their own account details (except the role). The account page can be accessed with the button in the navigation.</p>
+<a id="md:code-documentation" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Code documentation<a href="#md:code-documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The code is documented with different methods. I will give you an overview below and describe how to get to the documentation needed. Also some informations to additional documentation are added.</p>
+<a id="md:backend" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Backend<a href="#md:backend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>In the backend there is documentation of the functions which are used in the routes and also of the routes itself. To ensure both are shown in an easy way the documentation is seperated.</p>
+<a id="md:functions" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Functions<a href="#md:functions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The functions are documented with JSDoc and from the JSDoc comments in the code there is created a website which shows all the documentation of the functions. You navigate to docs &gt; backend and there you open the index.html in a browser of your choice and you can see an overview of all the functions on the server.js file. For each function is documented a short summary of what the function does, the parameters it receives and what the function returns.</p>
+<p>Inside the code of the functions are sometimes smaller comments to find which are not shown in the documentation. This comments mostly describe which part of the functions does what or something similar. This is only relevant if you need to make changes to the code itself.</p>
+<p>If you make changes to the code and edit the JSDoc comments you need to update the documentation. For this you need to navigate to the backend folder in your terminal. There you need to execute the following command:</p>
+<pre><code>    jsdoc server.js -d ../docs/backend
+</code></pre>
+<a id="md:routes" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Routes<a href="#md:routes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The documentation of the routes is done with Swagger and you can access this documentation with a url and see all the routes documented in detail. The url is dependant on where your backend runs. You need to append the base url with <em>/api-docs/</em>. When your server runs on localhost:8000 the url will look like this:</p>
+<pre><code>    http://localhost:8000/api-docs/
+</code></pre>
+<p>All the routes are shown in this swagger site. Regardless of the shown &quot;try it out&quot; button the execution of the API routes will result in an error statuscode. This is because of the needed authentification in the frontend and ensures that outside of the frontend app no changes can be made to the backend. The documentation of the API nethertheless shows how the routes work with (often shortened) examples.</p>
+<a id="md:frontend" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Frontend<a href="#md:frontend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>All components, services and helper files of the frontend are documented with TypeDoc. The documentation can be viewed when you navigate in your terminal to the docs &gt; frontend folder and open the index.html in a browser of your choice.</p>
+<p>Sometimes there are some additional informations as comments in the source code if someone else needs to edit the code later on. In the case of editing code and therefore also the documentation you need to update the documentation with the following command in the terminal inside the frontend folder:</p>
+<pre><code>    npx typedoc --entryPointStrategy expand ./src -out ../docs/frontend
+</code></pre>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:thesisgradingsystem"><span>Thesis<wbr/>Grading<wbr/>System</span></a><ul><li><a href="#md:the-application"><span>The application</span></a></li><li><a href="#md:how-to-set-up-and-start-the-program"><span>How to set up and start the program</span></a></li><li><ul><li><a href="#md:used-technologies"><span>Used technologies</span></a></li><li><a href="#md:general-steps"><span>General steps</span></a></li><li><a href="#md:setup-program-directly"><span>Setup program directly</span></a></li><li><ul><li><a href="#md:setup-of-backend"><span>Setup of backend</span></a></li><li><a href="#md:setup-of-frontend"><span>Setup of frontend</span></a></li></ul></li><li><a href="#md:setup-program-using-docker"><span>Setup program using <wbr/>Docker</span></a></li><li><ul><li><a href="#md:setup-of-backend-1"><span>Setup of backend</span></a></li><li><a href="#md:setup-of-frontend-1"><span>Setup of frontend</span></a></li></ul></li></ul></li><li><a href="#md:how-to-use-the-program"><span>How to use the program</span></a></li><li><a href="#md:code-documentation"><span>Code documentation</span></a></li><li><ul><li><a href="#md:backend"><span>Backend</span></a></li><li><ul><li><a href="#md:functions"><span>Functions</span></a></li><li><a href="#md:routes"><span>Routes</span></a></li></ul></li><li><a href="#md:frontend"><span>Frontend</span></a></li></ul></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="index.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="assets/icons.svg#icon-1"></use></svg><span>thesis-grading-system</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="."><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

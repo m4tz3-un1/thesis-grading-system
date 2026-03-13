@@ -1,0 +1,40 @@
+// General styling of the form
+.formArea {
+  margin-left: 20px;
+  width: 258px;
+  padding: 10px;
+  border: 1px solid #6699cc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: lighten(#6699cc, 33%);
+}
+
+// styling of the specific form elements
+.formElement {
+  width: 200px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.formElement > label {
+  display: block;
+  font-size: 0.8rem;
+  padding-bottom: 3px;
+}
+
+.formElement > input {
+  height: 22px;
+}
+
+#username, #password {
+  width: 250px;
+}
+
+#submitButton {
+  background-color: #6699cc;
+  padding: 8px;
+  padding-left: 43%;
+  padding-right: 43%;
+  border-radius: 5px;
+  margin-top: 10px;
+}

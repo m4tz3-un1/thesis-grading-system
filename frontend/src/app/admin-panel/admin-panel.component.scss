@@ -1,0 +1,70 @@
+.subHeadline {
+    color: #444444;
+    margin-left: 20px;
+}
+
+p {
+    margin-left: 20px;
+}
+
+.dynamic-form-container {
+    display: flex;
+  }
+
+.normalButton {
+    background-color: #6699cc;
+    padding: 8px;
+    border-radius: 5px;
+    margin-left: 20px;
+    width: 200px;
+}
+
+.normalButton > a {
+    color: black;
+    text-decoration: none;
+}
+
+.formArea {
+    width: 760px;
+    padding: 10px;
+    border: 1px solid #6699cc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: lighten(#6699cc, 33%);
+    margin-left: 20px;
+}
+
+.formElementSelect {
+    width: 800px;
+    display: inline-block;
+    margin-bottom: -10px;
+}
+
+.formElementSelect > mat-form-field {
+    width: 760px;
+}
+
+.option-field:hover {
+    background-color: lighten(#6699cc, 25%) !important;
+}
+
+.submit-button {  
+    background-color: #6699cc;
+    padding: 5px;
+    border-radius: 5px;
+    color: black;
+    margin-top: 1rem;
+    height: 2rem;
+    width: 10rem;
+    font-size: 14px;
+  }
+  
+  .submit-button:disabled {
+    background-color: gray;
+    border: none;
+    color: white;
+    margin-top: 1rem;
+    height: 2rem;
+    width: 10rem;
+    font-size: 14px;
+  }

@@ -1,0 +1,15 @@
+.env
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Content of some file directories 
+# Without the .gitkeep file so that the folders exist in the git repo but without further content
+/files/outputfiles/*
+!/files/outputfiles/.gitkeep
+/files/savefiles/*
+!/files/savefiles/.gitkeep
+/files/templatefiles/pictures/signaturePictures/*
+!/files/templatefiles/pictures/signaturePictures/.gitkeep

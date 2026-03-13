@@ -1,0 +1,97 @@
+<h1 class="headline">
+    General data of student and thesis
+</h1>
+
+<p class="margin20">
+    Please fill the fields below with the general data of the student and the thesis. <br>
+    All required fields are marked with an asterisk. <br>
+    The continue button is only enabled when all required fields are filled with data.
+</p>
+
+<div class="formArea">
+    <form [formGroup]="generalDataInput" (ngSubmit)="onSubmit()">
+        <h4 class="sectionLabel">
+            Student data:
+        </h4>
+        <div class="formSection">
+            <div class="formRow">
+                <div class="formElement">
+                    <label for="studentFirstName">
+                        First name: <span class="asterisk-required">&#42;</span>
+                    </label>
+                    <input type="text" id="studentFirstName" formControlName="studentFirstName">
+                </div>
+                <div class="formElement">
+                    <label>
+                        Last name: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="text" id="studentLastName" formControlName="studentLastName">
+                </div>
+                <div class="formElement">
+                    <label>
+                        Matriculation number: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <input type="number" id="matriculationNumber" formControlName="matriculationNumber" class="formElement">
+                </div>
+            </div>
+        </div>
+        <h4 class="sectionLabel">
+            Thesis data:
+        </h4>
+        <div class="formSection">
+            <div class="formRow">
+                <div class="formElement">
+                    <label>
+                        Thesis degree: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <select formControlName="thesisDegree" id="thesisDegree" (change)="setOberseminarValidators()">
+                        <option value="bachelor's thesis">Bachelor</option>
+                        <option value="master's thesis">Master</option>
+                    </select>
+                </div>
+                <div class="formElement">
+                    <label>
+                        Thesis type: <span style="color:red; font-size:80%">&#42;</span>
+                    </label>
+                    <select formControlName="thesisType" id="thesisType" (change)="gradingDataService.clearStoredGradingData()">
+                        <option *ngFor="let option of thesisTypeList" [value]="option.id">
+                            {{option.title}}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="formRow formElement">
+                <label class="floatingLeft">
+                    Thesis title: <span style="color:red; font-size:80%">&#42;</span> 
+                </label>
+                <span class="floatingRight">
+                    [max 320 characters]
+                </span>
+                <textarea id="thesisTitle" formControlName="thesisTitle" maxlength="320"></textarea>
+                <div *ngIf="generalDataInput.get('thesisTitle')?.hasError" [ngClass] = "'error'"> 
+                    <div *ngIf="generalDataInput.get('thesisTitle')?.hasError('pattern')" class="error-message">
+                        Thesis title can contain only english and german letters, numbers, spaces and the following symbols   
+                        . : , ; ! ? ( ) &#91; &#93; &#123; &#125; " &#39; % & / - 
+                    </div>
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formElement">
+                    <label id="oberseminarDateLabel">
+                        Oberseminar date:
+                    </label>
+                    <input type="date" id="oberseminarDate" formControlName="oberseminarDate"  (change)="setOberseminarValidators()">
+                </div>
+                <div class="formElement">
+                    <label id="oberseminarTimeLabel">
+                        Oberseminar time:
+                    </label>
+                    <input type="time" id="oberseminarTime" formControlName="oberseminarTime"  (change)="setOberseminarValidators()">
+                </div>
+            </div>
+        </div>
+        <button type="submit" [disabled]="generalDataInput.invalid" class="submit-button">
+            Continue to grading
+        </button>
+    </form>
+</div>
